@@ -178,7 +178,7 @@ def normalize_data(labelled_reactions, unlabelled_reactions, total_reactions):
     }
 
     unlabelled_data = {
-        "X": unlabelled_X.T,
+        "X": unlabelled_X,
         "X_labels": X_labels,
         "X_qual_num_classes": X_qual_num_classes,
         "reaction_ids": unlabelled_reaction_ids

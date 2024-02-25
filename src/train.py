@@ -49,7 +49,7 @@ def create_dataloaders(X, Y, train_ratio=0.8, seed=SEED, device="cpu"):
     return train_dataloader, test_dataloader
 
 
-def train(model, X, Y, seed=SEED, train_ratio=0.8, num_epochs=400, lr=3e-4, device="cpu", conf_mat=False):
+def train_model(model, X, Y, seed=SEED, train_ratio=0.8, num_epochs=400, lr=3e-4, device="cpu", conf_mat=False, verbose=False):
     train_dataloader, test_dataloader = create_dataloaders(X, Y, train_ratio=train_ratio, seed=seed, device=device)
     num_train_batches = len(train_dataloader)
     num_test_batches = len(test_dataloader)
@@ -80,6 +80,8 @@ def train(model, X, Y, seed=SEED, train_ratio=0.8, num_epochs=400, lr=3e-4, devi
         epoch_train_loss /= num_train_batches
         epoch_test_loss /= num_test_batches
 
+        if verbose and epoch % 30 == 0:
+            print(f"Epoch {epoch}: Train Loss: {epoch_train_loss}, Test Loss: {epoch_test_loss}")
         writer.add_scalar("Loss/train", epoch_train_loss, epoch)
         writer.add_scalar("Loss/test", epoch_test_loss, epoch)
         scheduler.step(epoch_test_loss)
@@ -102,15 +104,16 @@ def main(args):
                            latent_dimension=64)
     model.to(device)
 
-    train(model, 
-          X, 
-          Y, 
-          seed=args.seed, 
-          train_ratio=args.train_ratio, 
-          num_epochs=args.num_epochs, 
-          lr=args.lr, 
-          device=device,
-          conf_mat=args.conf_mat)
+    train_model(model, 
+                X, 
+                Y, 
+                seed=args.seed, 
+                train_ratio=args.train_ratio, 
+                num_epochs=args.num_epochs, 
+                lr=args.lr, 
+                device=device,
+                conf_mat=args.conf_mat,
+                verbose=args.verbose)
 
 
 if __name__ == "__main__":
@@ -130,7 +133,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--seed",
                         type=int,
-                        default=42,
+                        default=SEED,
                         help="Random seed for reproducibility (default 42).")
     
     parser.add_argument("--num_epochs",
@@ -147,6 +150,11 @@ if __name__ == "__main__":
                         type=bool,
                         default=False,
                         help="Create a confusion matrix after training. Modify code to save to file.")
+    
+    parser.add_argument("--verbose",
+                        type=bool,
+                        default=False,
+                        help="Print out loss during training.")
  
     args = parser.parse_args()
 

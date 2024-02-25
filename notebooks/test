@@ -1,0 +1,21 @@
+                       Rxn_Name   Ion Halide           SMILES  Type  index  \
+75    Pb++ + I + NCCc1cccc(F)c1  Pb++      I   NCCc1cccc(F)c1   100   43.0   
+78           Pb++ + I + N=C(N)N  Pb++      I          N=C(N)N   100   43.0   
+79           Pb++ + I + N=C(N)N  Pb++      I          N=C(N)N   110   43.0   
+89        Pb++ + I + NCc1cccnc1  Pb++      I       NCc1cccnc1   100   43.0   
+124       Pb++ + I + NCc1cccnc1  Pb++      I       NCc1cccnc1   100   43.0   
+166      Pb++ + I + NCCc1cccnc1  Pb++      I      NCCc1cccnc1   100   43.0   
+186  Pb++ + I + COc1ccc(CCN)cc1  Pb++      I  COc1ccc(CCN)cc1   100   43.0   
+190      Pb++ + I + NCCc1cccnc1  Pb++      I      NCCc1cccnc1   100   43.0   
+205  Pb++ + I + COc1ccc(CCN)cc1  Pb++      I  COc1ccc(CCN)cc1   100   43.0   
+208   Pb++ + I + NCCc1cccc(F)c1  Pb++      I   NCCc1cccc(F)c1   100   43.0   
+
+
+
+85: Pb++,I,NC(N)=N,100,
+86: Pb++,I,NC(N)=N,110,
+
+
+50: Pb++,I,NCC1CCCNC1,100,
+131: Pb++,I,NCc1cccnc1,100,
+

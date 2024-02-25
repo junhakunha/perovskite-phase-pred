@@ -1,18 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset
-
-class PhaseDataset(Dataset):
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __len__(self):
-        return self.x.shape[0]
-
-    def __getitem__(self, index):
-        return self.x[index], self.y[index]
 
 
 class PhasePredictor(nn.Module):

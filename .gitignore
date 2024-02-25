@@ -1,4 +1,6 @@
 
 .DS_Store
-/__pycache__/
 /venv39/
+/test_wrs/
+__pycache__/
+*.tfevents.*

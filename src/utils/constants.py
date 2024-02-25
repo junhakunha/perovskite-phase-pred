@@ -1,4 +1,16 @@
-rxn_vars = {
+
+HOME_DIR = "/Users/junhalee/Desktop/perovskite-phase-pred/"
+DATA_DIR = HOME_DIR + "data/"
+DEVICE = "cpu"
+SEED = 42
+
+"""
+List of reaction variables used for prediction.
+    - key: name of the variable
+    - val[0]: type of variable (continuous, discrete, or categorical)
+    - val[1]: name of the variable
+"""
+RXN_VARS = {
             # "functional": ["categorical", "Functional"],
             # "denticity": ["discrete", "Denticity"],
             # "functional": ["discrete", "Functional group charge"],
@@ -54,7 +66,10 @@ rxn_vars = {
             "ionic_radius": ["continuous", "Ionic Radius"]}
 
 
-categorical_mappings = {"functional": {'Disulfide': 0,
+"""
+Categorical mappings to an integer label for each categorical variable.
+"""
+CATEGORICAL_MAPPINGS = {"functional": {'Disulfide': 0,
                                        'Ether': 1,
                                        'Pyrazine': 2,
                                        'Pyrrolidine': 3,

@@ -128,11 +128,6 @@ if __name__ == "__main__":
                         default=0.8,
                         help="Ratio of train:test data (default 0.8, no val set).")
     
-    parser.add_argument("--conf_mat",
-                        type=bool,
-                        default=False,
-                        help="Create a confusion matrix after training. Modify code to save to file.")
-    
     parser.add_argument("--seed",
                         type=int,
                         default=42,
@@ -148,6 +143,11 @@ if __name__ == "__main__":
                         default=3e-4,
                         help="Learning rate for training (default 3e-4).")
     
+    parser.add_argument("--conf_mat",
+                        type=bool,
+                        default=False,
+                        help="Create a confusion matrix after training. Modify code to save to file.")
+ 
     args = parser.parse_args()
 
     main(args)

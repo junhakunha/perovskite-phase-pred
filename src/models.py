@@ -1,40 +1,66 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import rdkit.Chem
 
 class PhasePredictor(nn.Module):
-    def __init__(self, input_dim, qual_input_dims, latent_dimension):
+    def __init__(self, MH_input_dim, MH_qual_num_classes, latent_dimension, L_embedding_dim):
+        """
+        Initialize the phase predictor model.
+
+        Args:
+        - MH_input_dim: int, the number of features in the Metal, Halide input (qualitative and quantitative)
+                        Note qualitative features always come first in the input.
+        - MH_qual_num_classes: list of integers, the number of classes for each of the qualitative features of Metal, Halide input
+        - latent_dimension: int, the dimension of the latent space
+        - L_embedding_dim: int, the dimension of the Ligand embeddings. Used to match the dimensions of the Metal, Halide embeddings.
+        """
         super().__init__()
-        init_qual_embeddings = []
-        for qual_input_dim in qual_input_dims:
-            init_qual_embeddings.append(nn.Embedding(qual_input_dim,
-                                                     latent_dimension))
-        self.init_qual_embeddings = nn.ModuleList(init_qual_embeddings)
-        self.init_quant_embeddings = nn.Linear(input_dim - len(qual_input_dims),
-                                               latent_dimension)
-        embedding_layers = []
-        for _ in range(2):
-            embedding_layers.append(nn.Linear(latent_dimension,
-                                              latent_dimension))
-        self.embedding_layers = nn.ModuleList(embedding_layers)
-        self.out = nn.Linear(latent_dimension, 1)
+        # Set up embeddings for the qualitative features of Metal, Halide input (categorical)
+        MH_qual_embeddings = []
+        for ML_qual_num_class in MH_qual_num_classes:
+            # Match to the dimensions of Ligand embeddings
+            MH_qual_embeddings.append(nn.Embedding(ML_qual_num_class, L_embedding_dim))
+        self.ML_qual_embeddings = nn.ModuleList(MH_qual_embeddings)
 
+        # Set up embeddings for the quantitative features of Metal, Halide input (continuous)
+        MH_num_quant_features = MH_input_dim - len(MH_qual_num_classes)
+        self.ML_quant_embeddings = nn.Linear(MH_num_quant_features, L_embedding_dim)
 
-    def encode(self, x):
-        x_qual_emb = torch.stack([e_i(x[:, i].long())
-                                  for (i, e_i) in enumerate(self.init_qual_embeddings)], -1).sum(-1)
-        x_quant_emb = self.init_quant_embeddings(x[:,
-                                                   len(self.init_qual_embeddings):])
+        # Fusion layers to combine the embeddings of Metal, Halide embeddings with Ligand embeddings
+        fusion_layers = [
+            nn.Linear(2*L_embedding_dim, latent_dimension),
+            nn.Linear(latent_dimension, latent_dimension)
+        ]
+        self.fusion_layers = nn.ModuleList(fusion_layers)
 
-        x_emb = x_qual_emb + x_quant_emb
-        x_emb = F.relu(x_emb)
-        for emb in self.embedding_layers:
-            x_emb = emb(x_emb)
-            x_emb = F.relu(x_emb)
-        out = self.out(x_emb)
-        return out
+        # Prediction layer to predict the phase
+        self.prediction_layer = nn.Linear(latent_dimension, 1)
 
-    def forward(self, x):
-        pred = nn.Sigmoid()(self.encode(x))
+    def encode_MH(self, x_MH):
+        """
+        Encode the Metal, Halide input. x_MH has the features for Metal, Halide input, with qualitative features first.
+        """
+        # Sum all embeddings for qualitative features
+        x_MH_qual_emb = torch.stack(
+            [e_i(x_MH[:, i].long()) for (i, e_i) in enumerate(self.ML_qual_embeddings)], 
+            -1
+        ).sum(-1)
+
+        # Sum all embeddings for quantitative features
+        x_MH_quant_emb = self.ML_quant_embeddings(x_MH[:, len(self.ML_qual_embeddings):])
+        x_MH = x_MH_qual_emb + x_MH_quant_emb
+        return x_MH
+
+    def forward(self, x_MH, x_L):
+        x_MH = self.encode_MH(x_MH)
+        x = torch.cat([x_MH, x_L], -1)
+
+        x = F.relu(x)
+        for layer in self.fusion_layers:
+            x = layer(x)
+            x = F.relu(x)
+        x = self.prediction_layer(x)
+        pred = F.sigmoid(x)
+        
         return pred

@@ -17,20 +17,27 @@ from src.utils.constants import HOME_DIR, DATA_DIR, DEVICE, SEED
 from src.utils.data_utils import create_confusion_matrix
 
 
-def create_dataloaders(X, Y, train_ratio=0.8, seed=SEED, device="cpu"):
-    X = torch.tensor(X, device=device).float()
+def create_dataloaders(X_MH, X_L, Y, train_ratio=0.8, seed=SEED, device="cpu"):
+    X_MH = torch.tensor(X_MH, device=device).float()
+    X_L = torch.tensor(X_L, device=device).float()
     Y = torch.tensor(Y, device=device).float()
 
-    num_data_points = X.shape[0]
+    num_data_points = X_MH.shape[0]
 
     np.random.seed(seed)
     random_indices = np.random.permutation(num_data_points)
     num_train = int(num_data_points*train_ratio)
 
-    train_dataset = PhaseDataset(X[random_indices[0:num_train]],
-                                Y[random_indices[0:num_train]])
-    test_dataset = PhaseDataset(X[random_indices[num_train:]],
-                                Y[random_indices[num_train:]])
+    train_dataset = PhaseDataset(
+        X_MH[random_indices[0:num_train]],
+        X_L[random_indices[0:num_train]],
+        Y[random_indices[0:num_train]]
+    )
+    test_dataset = PhaseDataset(
+        X_MH[random_indices[num_train:]],
+        X_L[random_indices[num_train:]],
+        Y[random_indices[num_train:]]
+    )
 
     class_sample_count = torch.tensor([len(torch.where(train_dataset.Y == t)[0])
                                     for t in np.unique(train_dataset.Y)])
@@ -49,8 +56,8 @@ def create_dataloaders(X, Y, train_ratio=0.8, seed=SEED, device="cpu"):
     return train_dataloader, test_dataloader
 
 
-def train_model(model, X, Y, seed=SEED, train_ratio=0.8, num_epochs=400, lr=3e-4, device="cpu", conf_mat=False, verbose=False):
-    train_dataloader, test_dataloader = create_dataloaders(X, Y, train_ratio=train_ratio, seed=seed, device=device)
+def train_model(model, X_MH, X_L, Y, seed=SEED, train_ratio=0.8, num_epochs=400, lr=3e-4, device="cpu", conf_mat=False, verbose=False):
+    train_dataloader, test_dataloader = create_dataloaders(X_MH, X_L, Y, train_ratio=train_ratio, seed=seed, device=device)
     num_train_batches = len(train_dataloader)
     num_test_batches = len(test_dataloader)
 
@@ -61,10 +68,10 @@ def train_model(model, X, Y, seed=SEED, train_ratio=0.8, num_epochs=400, lr=3e-4
     writer = SummaryWriter(log_dir=os.path.join(HOME_DIR, "src/logs"))
     for epoch in range(num_epochs):
         epoch_train_loss = 0
-        for (train_x, train_y) in train_dataloader:
+        for (train_x_MH, train_x_L, train_y) in train_dataloader:
             opt.zero_grad()
 
-            pred_y = model(train_x).flatten()
+            pred_y = model(train_x_MH, train_x_L).flatten()
             
             loss = criterion(pred_y, train_y)
             loss.backward()
@@ -73,8 +80,8 @@ def train_model(model, X, Y, seed=SEED, train_ratio=0.8, num_epochs=400, lr=3e-4
             opt.step()
         
         epoch_test_loss = 0
-        for (test_x, test_y) in test_dataloader:
-            pred_y = model(test_x).flatten()
+        for (test_x_MH, test_x_L, test_y) in test_dataloader:
+            pred_y = model(test_x_MH, test_x_L).flatten()
             loss = criterion(pred_y, test_y)
             epoch_test_loss += loss.item()
         epoch_train_loss /= num_train_batches
@@ -94,36 +101,43 @@ def main(args):
     device = torch.device(DEVICE)
     data_path = args.data_path
     data = np.load(data_path)
-
-    X = data["X"]
+    X_MH = data["X_MH"]
+    X_L = data["X_L"]
     Y = data["Y"]
-    qual_input_dims = data['X_qual_num_classes']
+    MH_qual_num_classes = data['X_MH_qual_num_classes']
 
-    model = PhasePredictor(input_dim=X.shape[1], 
-                           qual_input_dims=qual_input_dims, 
-                           latent_dimension=64)
+    model = PhasePredictor(
+        MH_input_dim=X_MH.shape[1], 
+        MH_qual_num_classes=MH_qual_num_classes, 
+        latent_dimension=64, 
+        L_embedding_dim=X_L.shape[1]
+    )
+
     model.to(device)
 
-    train_model(model, 
-                X, 
-                Y, 
-                seed=args.seed, 
-                train_ratio=args.train_ratio, 
-                num_epochs=args.num_epochs, 
-                lr=args.lr, 
-                device=device,
-                conf_mat=args.conf_mat,
-                verbose=args.verbose)
+    train_model(
+        model, 
+        X_MH,
+        X_L, 
+        Y, 
+        seed=args.seed, 
+        train_ratio=args.train_ratio, 
+        num_epochs=args.num_epochs, 
+        lr=args.lr, 
+        device=device,
+        conf_mat=args.conf_mat,
+        verbose=args.verbose
+    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Trains a PhasePredictor model on the dataset.")
 
-    dataset_path = os.path.join(DATA_DIR, "dataset.npz")
+    labelled_dataset_path = os.path.join(DATA_DIR, "labelled_dataset.npz")
 
     parser.add_argument("--data_path", 
                         type=str, 
-                        default=dataset_path, 
+                        default=labelled_dataset_path, 
                         help="Path to npz file containing the full dataset (attempted reactions).")
     
     parser.add_argument("--train_ratio",
@@ -148,7 +162,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--conf_mat",
                         type=bool,
-                        default=False,
+                        default=True,
                         help="Create a confusion matrix after training. Modify code to save to file.")
     
     parser.add_argument("--verbose",
@@ -159,7 +173,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
-
-
-
-    

@@ -10,8 +10,8 @@ def create_confusion_matrix(model, test_dataloader, save_path=None):
     all_outputs = []
     all_classes = []
     with torch.no_grad():
-        for inputs, classes in test_dataloader:
-            outputs = model(inputs)
+        for input_MH, input_L, classes in test_dataloader:
+            outputs = model(input_MH, input_L)
             all_outputs.append(outputs)
             all_classes.append(classes)
     all_outputs = torch.round(torch.cat(all_outputs)).flatten()

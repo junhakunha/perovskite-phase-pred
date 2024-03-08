@@ -22,8 +22,6 @@ sys.path.append(os.getcwd())
 from src.utils.constants import DATA_DIR, RXN_VARS, CATEGORICAL_MAPPINGS
 
 
-
-
 def parse_data_files(candidate_reactions_path, attempted_reactions_path):
     """
     Takes in the paths to the candidate and attempted reactions csv files and returns the parsed dataframes.
@@ -199,7 +197,6 @@ def main(args):
 
     labelled_data_path = os.path.join(args.output_path, "labelled_dataset.npz")
     unlabelled_data_path = os.path.join(args.output_path, "unlabelled_dataset.npz")
-
     np.savez(labelled_data_path, 
                 X=labelled_data['X'], 
                 Y=labelled_data['Y'], 
@@ -219,8 +216,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create dataset for training. Requires csv files for entire reaction space and attempted reactions.")
 
-    candidate_reactions_path = os.path.join(DATA_DIR, "Reaction_Data_Inputs_021424.csv")
-    attempted_reactions_path = os.path.join(DATA_DIR, "2D_Dataset.csv")
+    candidate_reactions_path = os.path.join(DATA_DIR, "Reaction_Data_Inputs_030424.csv")
+    attempted_reactions_path = os.path.join(DATA_DIR, "2D_Dataset_030424.csv")
 
     parser.add_argument("--candidate_reactions_path", 
                         type=str, 

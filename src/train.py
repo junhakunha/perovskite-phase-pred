@@ -7,6 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from torch.utils.data import WeightedRandomSampler
 import argparse
+from time import gmtime, strftime
 
 sys.path.append("../")
 sys.path.append(os.getcwd())
@@ -65,7 +66,8 @@ def train_model(model, X_MH, X_L, Y, seed=SEED, train_ratio=0.8, num_epochs=400,
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, patience=10, factor=0.5, verbose=True)
     criterion = torch.nn.BCELoss()
 
-    writer = SummaryWriter(log_dir=os.path.join(HOME_DIR, "src/logs"))
+    log_name = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    writer = SummaryWriter(log_dir=os.path.join(HOME_DIR, "src/logs", log_name))
     for epoch in range(num_epochs):
         epoch_train_loss = 0
         for (train_x_MH, train_x_L, train_y) in train_dataloader:

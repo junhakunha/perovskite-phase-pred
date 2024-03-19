@@ -22,7 +22,7 @@ def initialize_ensemble(num_models, data):
             PhasePredictor(
                 MH_input_dim=X_MH.shape[1], 
                 MH_qual_num_classes=MH_qual_num_classes, 
-                latent_dimension=64, 
+                latent_dimension=128, 
                 L_embedding_dim=X_L.shape[1]
             )
         )
@@ -37,7 +37,7 @@ def train_ensemble(models, labelled_data, device=DEVICE):
 
     for model in models:
         model.to(device)
-        train_model(model, X_MH, X_L, Y, verbose=True)
+        train_model(model, X_MH, X_L, Y, num_epochs=25, verbose=True)
 
 def inference(models, unlabelled_data):
     X_MH = torch.tensor(unlabelled_data['X_MH'], requires_grad=False).float()
@@ -60,18 +60,19 @@ def acquisition_func(mean, std, xi):
     return mean + xi * std
 
 def get_best_k_reactions(dataset, acquisition, k):
-    indices = np.argsort(acquisition.cpu().detach().numpy().flatten())
+
+    indices = np.flip(np.argsort(acquisition.cpu().detach().numpy().flatten()))
     reactions = []
-    for reaction in dataset['reaction_ids'][indices[-k:]]:
+    for reaction in dataset['reaction_ids'][indices[:k]]:
         reactions.append(reaction)
-    return reactions
+    return reactions, indices[:k]
 
 def get_worst_k_reactions(dataset, acquisition, k):
     indices = np.argsort(acquisition.cpu().detach().numpy().flatten())
     reactions = []
     for reaction in dataset['reaction_ids'][indices[:k]]:
         reactions.append(reaction)
-    return reactions
+    return reactions, indices[:k]
 
 def show_histogram(data, name=""):
     plt.hist(data.cpu().detach().numpy(), bins=100)
@@ -92,18 +93,19 @@ def main(num_models=10, xi=1):
     show_histogram(std, "Standard Deviation")
 
     acquisition = acquisition_func(mean, std, xi)
-    best_reactions = get_best_k_reactions(unlabelled_data, acquisition, 10)
-    worst_reactions = get_worst_k_reactions(unlabelled_data, acquisition, 10)
+    
+    best_reactions, best_indices = get_best_k_reactions(unlabelled_data, acquisition, 20)
+    worst_reactions, worst_indices = get_worst_k_reactions(unlabelled_data, acquisition, 20)
 
     print("Best reactions: ")
-    for reaction in best_reactions:
-        print(reaction)
+    for i, reaction in enumerate(best_reactions):
+        print(i, reaction, round(acquisition[best_indices[i]].item(), 4), round(mean[best_indices[i]].item(), 4), round(std[best_indices[i]].item(), 4))
     
     print("="*50)
 
     print("Worst reactions: ")
-    for reaction in worst_reactions:
-        print(reaction)
+    for i, reaction in enumerate(worst_reactions):
+        print(i, reaction, round(acquisition[worst_indices[i]].item(), 4), round(mean[worst_indices[i]].item(), 4), round(std[worst_indices[i]].item(), 4))
 
 
 if __name__ == "__main__":

@@ -20,12 +20,12 @@ class PhasePredictor(nn.Module):
         MH_qual_embeddings = []
         for ML_qual_num_class in MH_qual_num_classes:
             # Match to the dimensions of Ligand embeddings
-            MH_qual_embeddings.append(nn.Embedding(ML_qual_num_class, L_embedding_dim))
-        self.ML_qual_embeddings = nn.ModuleList(MH_qual_embeddings)
+            MH_qual_embeddings.append(nn.Embedding(ML_qual_num_class, L_embedding_dim//2))
+        self.MH_qual_embeddings = nn.ModuleList(MH_qual_embeddings)
 
         # Set up embeddings for the quantitative features of Metal, Halide input (continuous)
         MH_num_quant_features = MH_input_dim - len(MH_qual_num_classes)
-        self.ML_quant_embeddings = nn.Linear(MH_num_quant_features, L_embedding_dim)
+        self.MH_quant_embeddings = nn.Linear(MH_num_quant_features, L_embedding_dim//2)
 
         # Fusion layers to combine the embeddings of Metal, Halide embeddings with Ligand embeddings
         fusion_layers = [
@@ -43,13 +43,13 @@ class PhasePredictor(nn.Module):
         """
         # Sum all embeddings for qualitative features
         x_MH_qual_emb = torch.stack(
-            [e_i(x_MH[:, i].long()) for (i, e_i) in enumerate(self.ML_qual_embeddings)], 
+            [e_i(x_MH[:, i].long()) for (i, e_i) in enumerate(self.MH_qual_embeddings)], 
             -1
         ).sum(-1)
 
         # Sum all embeddings for quantitative features
-        x_MH_quant_emb = self.ML_quant_embeddings(x_MH[:, len(self.ML_qual_embeddings):])
-        x_MH = x_MH_qual_emb + x_MH_quant_emb
+        x_MH_quant_emb = self.MH_quant_embeddings(x_MH[:, len(self.MH_qual_embeddings):])
+        x_MH = torch.cat((x_MH_qual_emb, x_MH_quant_emb), -1)
         return x_MH
 
     def forward(self, x_MH, x_L):

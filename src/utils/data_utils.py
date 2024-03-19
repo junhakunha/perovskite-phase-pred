@@ -14,7 +14,10 @@ def create_confusion_matrix(model, test_dataloader, save_path=None):
             outputs = model(input_MH, input_L)
             all_outputs.append(outputs)
             all_classes.append(classes)
-    all_outputs = torch.round(torch.cat(all_outputs)).flatten()
+    # all_outputs = torch.round(torch.cat(all_outputs)).flatten()
+            
+    all_outputs = (torch.cat(all_outputs)).flatten()
+    all_outputs = (all_outputs > 0.05).float()
     all_classes = torch.round(torch.cat(all_classes)).flatten()
 
     actual_labels = all_classes.tolist()

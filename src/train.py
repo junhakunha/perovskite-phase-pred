@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import WeightedRandomSampler
 import argparse
 from time import gmtime, strftime
+import time
 
 sys.path.append("../")
 sys.path.append(os.getcwd())
@@ -65,7 +66,7 @@ def train_model(model, X_MH, X_L, Y, seed=SEED, train_ratio=0.8, num_epochs=400,
     opt = Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, patience=10, factor=0.5, verbose=True)
     criterion = torch.nn.BCELoss()
-
+    time.sleep(1)
     log_name = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     writer = SummaryWriter(log_dir=os.path.join(HOME_DIR, "src/logs", log_name))
     for epoch in range(num_epochs):
@@ -89,7 +90,7 @@ def train_model(model, X_MH, X_L, Y, seed=SEED, train_ratio=0.8, num_epochs=400,
         epoch_train_loss /= num_train_batches
         epoch_test_loss /= num_test_batches
 
-        if verbose and epoch % 30 == 0:
+        if verbose and epoch % 5 == 0:
             print(f"Epoch {epoch}: Train Loss: {epoch_train_loss}, Test Loss: {epoch_test_loss}")
         writer.add_scalar("Loss/train", epoch_train_loss, epoch)
         writer.add_scalar("Loss/test", epoch_test_loss, epoch)
@@ -111,7 +112,7 @@ def main(args):
     model = PhasePredictor(
         MH_input_dim=X_MH.shape[1], 
         MH_qual_num_classes=MH_qual_num_classes, 
-        latent_dimension=64, 
+        latent_dimension=128, 
         L_embedding_dim=X_L.shape[1]
     )
 

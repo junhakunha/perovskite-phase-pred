@@ -126,7 +126,7 @@ def prepare_data(labelled_reactions, unlabelled_reactions, total_reactions, calc
 
         reaction_ids: List of strings, reaction names
 
-        Y: Y data for attempted reactions (classified as 0 for 100 and 1 for 110)
+        Y: Y data for attempted reactions (classified as 0 for 100 and 1 for 110, 2 for failure (0))
             - only for labelled_data
     """
     print("Preparing data for model...")

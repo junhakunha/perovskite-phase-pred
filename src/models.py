@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import rdkit.Chem
 
 class PhasePredictor(nn.Module):
     def __init__(self, MH_input_dim, MH_qual_num_classes, latent_dimension, L_embedding_dim):

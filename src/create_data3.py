@@ -3,7 +3,7 @@ Creates dataset for training. Requires csv files for entire reaction space and a
 
 The dataset is saved as a numpy file with the following keys
     - X: ndarrary of shape [num_data, num_features], features (qualitative features always come in front of quantitative features)
-    - Y: ndarrary of shape [num_data], labels (0 for 100 phase, 1 for 110 phase)
+    - Y: ndarrary of shape [num_data], labels (0 for no formation, 100 phase, 1 for 110 phase, 2 for no formation)
     - X_labels: ndarrary of shape [num_features], feature names
     - X_qual_num_classes: ndarrary of shape [num_qual_features], number of classes for each qualitative feature
     - reaction_ids: ndarrary of shape [num_data], reaction names
@@ -45,7 +45,7 @@ def parse_data_files(candidate_reactions_path, attempted_reactions_path):
     info from the candidate_reactions dataframe. None of the values are changed from the original data.
 
     Returns:
-        labelled_reactions: Dataframe of reactions that have been attempted (classified as 100 or 110)
+        labelled_reactions: Dataframe of reactions that have been attempted (classified as 100, 110, or 0 (no formation))
             - Has extra column for 'perovskite_type'
         unlabelled_reactions: Dataframe of reactions that have not been attempted (unclassified)
         total_reactions: Dataframe of all reactions (combined)
@@ -59,8 +59,10 @@ def parse_data_files(candidate_reactions_path, attempted_reactions_path):
     attempted_reactions = attempted_reactions[["Metal", "Halide", "Ligand", "Type"]]
     # Drop rows with NaN values
     attempted_reactions = attempted_reactions.dropna(inplace=False, how="any", axis=0)
-    # Drop rows with Type = 0.0
-    attempted_reactions = attempted_reactions[attempted_reactions["Type"] != 0.0]
+    
+    # Drop rows with Type = 0.0 - No longer do this because we want to include failed reactions
+    # attempted_reactions = attempted_reactions[attempted_reactions["Type"] != 0.0]
+    
     # Drop duplicates
     attempted_reactions = attempted_reactions.drop_duplicates()
 
@@ -115,7 +117,7 @@ def prepare_data(labelled_reactions, unlabelled_reactions, total_reactions, calc
     categorical features to numerical values.
 
     Returns labelled_data and unlabelled_data in the form of dictionaries with the following keys:
-        X: X data for attempted reactions (classified as 100 or 110)
+        X: X data for attempted reactions (classified as 100, 110, or no reaction)
             - ndarrays of shape [num_data, num_features]
             - qualitative features always come in front of quantitative features
             
@@ -126,7 +128,7 @@ def prepare_data(labelled_reactions, unlabelled_reactions, total_reactions, calc
 
         reaction_ids: List of strings, reaction names
 
-        Y: Y data for attempted reactions (classified as 0 for 100 and 1 for 110, 2 for failure (0))
+        Y: Y data for attempted reactions (classified as 0 for failure and 1 for 100, 2 for 110)
             - only for labelled_data
     """
     print("Preparing data for model...")
@@ -187,7 +189,11 @@ def prepare_data(labelled_reactions, unlabelled_reactions, total_reactions, calc
 
     
     labelled_Y = labelled_reactions["perovskite_type"].values
-    labelled_Y = np.where(labelled_Y == 100, 0, 1)
+    # Three values are possible: 0 (no formation), 100 (100 phase), 110 (110 phase)
+    # Classifcation is done as 0 (no formation), 1 (100 phase), 2 (110 phase)
+    labelled_Y = np.where(labelled_Y == 0, 0, labelled_Y)
+    labelled_Y = np.where(labelled_Y == 100, 1, labelled_Y)
+    labelled_Y = np.where(labelled_Y == 110, 2, labelled_Y)
 
     labelled_reaction_ids = list(labelled_reactions["Rxn_Name"].values)
     unlabelled_reaction_ids = list(unlabelled_reactions["Rxn_Name"].values)

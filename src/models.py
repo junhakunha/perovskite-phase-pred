@@ -6,7 +6,7 @@ import rdkit.Chem
 class PhasePredictor(nn.Module):
     def __init__(self, MH_input_dim, MH_qual_num_classes, latent_dimension, L_embedding_dim):
         """
-        Initialize the phase predictor model.
+        Initialize the phase predictor model. It is a classifier that predicts the phase of the material (no formation, 100, or 110).
 
         Args:
         - MH_input_dim: int, the number of features in the Metal, Halide input (qualitative and quantitative)
@@ -34,8 +34,8 @@ class PhasePredictor(nn.Module):
         ]
         self.fusion_layers = nn.ModuleList(fusion_layers)
 
-        # Prediction layer to predict the phase
-        self.prediction_layer = nn.Linear(latent_dimension, 1)
+        # Prediction layer to predict the phase (or no formation)
+        self.prediction_layer = nn.Linear(latent_dimension, 3)
 
     def encode_MH(self, x_MH):
         """
@@ -61,6 +61,6 @@ class PhasePredictor(nn.Module):
             x = layer(x)
             x = F.relu(x)
         x = self.prediction_layer(x)
-        pred = F.sigmoid(x)
+        pred = F.softmax(x, -1)
         
         return pred
